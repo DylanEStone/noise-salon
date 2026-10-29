@@ -1,0 +1,569 @@
+<title>Noise Salon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: gallery wall. The piece hangs on the left with a hard Memphis shadow; a museum wall label sits to its right and drops below it on phones. */
+:root {
+  --wall: #dcdfe4;
+  --ink: #15161a;
+  --muted: #565b64;
+  --rule: #b6bcc5;
+  --mat: #eceef1;
+  --shadow: #15161a;
+  --accent: #e9426e;     /* replaced per piece from its palette */
+  --on-accent: #15161a;  /* replaced per piece for contrast */
+  --display: "Syne", "Avenir Next", "Futura", system-ui, sans-serif;
+  --body: "Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wall: #17181c; --ink: #eceef2; --muted: #9ba1ab; --rule: #33363d;
+    --mat: #202227; --shadow: #000000; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --wall: #17181c; --ink: #eceef2; --muted: #9ba1ab; --rule: #33363d;
+  --mat: #202227; --shadow: #000000; color-scheme: dark;
+}
+
+body {
+  background: var(--wall);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-block: 40px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 56px;
+  align-items: start;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.frame {
+  justify-self: end;
+  width: min(100%, calc((100vh - 96px) * 0.8));
+  max-width: 100%;
+  aspect-ratio: 4 / 5;
+  background: var(--mat);
+  box-shadow: 16px 16px 0 var(--shadow);
+  outline: 3px solid var(--shadow);
+}
+.frame canvas { display: block; width: 100%; height: 100%; }
+
+.label { display: grid; gap: 20px; min-width: 0; padding-top: 8px; }
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.meta { margin: -12px 0 0; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.statement { margin: 0; max-width: 34ch; }
+
+dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  border-top: 1px solid var(--rule);
+}
+dt, dd {
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+}
+dt { color: var(--muted); padding-right: 16px; }
+dd { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.swatches { display: inline-flex; gap: 3px; vertical-align: -2px; margin-left: 8px; }
+.swatches span { width: 12px; height: 12px; outline: 1px solid var(--ink); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+button, input {
+  font: 600 14px/1 var(--body);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  padding: 11px 14px;
+  color: var(--ink);
+  background: var(--mat);
+}
+button { cursor: pointer; transition: transform 80ms ease, box-shadow 80ms ease; box-shadow: 4px 4px 0 var(--shadow); }
+button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--shadow); }
+button:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--shadow); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+#new { background: var(--accent); color: var(--on-accent); border-color: var(--shadow); }
+#seedForm { display: flex; gap: 0; }
+#seedForm input { width: 110px; font-family: var(--mono); font-weight: 500; border-right: 0; }
+#seedForm label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); padding: 1px 5px; }
+
+@media (max-width: 820px) {
+  body { padding-block: 24px 40px; }
+  main { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .frame { justify-self: center; width: calc(100% - 16px); }
+  h1 { font-size: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  button { transition: none; }
+}
+</style>
+
+<main>
+  <div class="frame"><canvas id="art" aria-label="Generated abstract artwork"></canvas></div>
+
+  <aside class="label">
+    <p class="eyebrow">Generative work · Perlin noise</p>
+    <h1 id="title">Untitled</h1>
+    <p class="meta" id="meta">2026</p>
+    <p class="statement" id="statement"></p>
+
+    <dl id="params"></dl>
+
+    <div class="controls">
+      <button id="new" type="button">New piece</button>
+      <form id="seedForm">
+        <label for="seed">Seed</label>
+        <input id="seed" inputmode="numeric" autocomplete="off" placeholder="seed">
+        <button type="submit">Render</button>
+      </form>
+    </div>
+    <p class="hint">Press <kbd>N</kbd> for a new piece. Every seed redraws the same work. Right-click or long-press the image to save it.</p>
+  </aside>
+</main>
+
+<script>
+const W = 1200, H = 1500, TAU = Math.PI * 2;
+const canvas = document.getElementById('art');
+canvas.width = W; canvas.height = H;
+const ctx = canvas.getContext('2d');
+
+// ---------- seeded randomness + improved Perlin noise ----------
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function grad(h, x, y) {
+  switch (h & 7) {
+    case 0: return x + y;  case 1: return -x + y;
+    case 2: return x - y;  case 3: return -x - y;
+    case 4: return x;      case 5: return -x;
+    case 6: return y;      default: return -y;
+  }
+}
+
+class Perlin {
+  constructor(rand) {
+    const p = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) p[i] = i;
+    for (let i = 255; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [p[i], p[j]] = [p[j], p[i]];
+    }
+    this.p = new Uint8Array(512);
+    for (let i = 0; i < 512; i++) this.p[i] = p[i & 255];
+  }
+  noise(x, y) {
+    let X = Math.floor(x), Y = Math.floor(y);
+    x -= X; y -= Y; X &= 255; Y &= 255;
+    const u = x * x * x * (x * (x * 6 - 15) + 10);
+    const v = y * y * y * (y * (y * 6 - 15) + 10);
+    const p = this.p, A = p[X] + Y, B = p[X + 1] + Y;
+    const n00 = grad(p[A], x, y), n10 = grad(p[B], x - 1, y);
+    const n01 = grad(p[A + 1], x, y - 1), n11 = grad(p[B + 1], x - 1, y - 1);
+    const nx0 = n00 + u * (n10 - n00), nx1 = n01 + u * (n11 - n01);
+    return nx0 + v * (nx1 - nx0);
+  }
+}
+
+function fbm(P, x, y, oct) {
+  let sum = 0, amp = 0.5, freq = 1, norm = 0;
+  for (let i = 0; i < oct; i++) {
+    sum += amp * P.noise(x * freq, y * freq);
+    norm += amp; amp *= 0.5; freq *= 2.03;
+  }
+  return sum / norm;
+}
+
+const n01 = v => Math.min(1, Math.max(0, v * 0.75 + 0.5));
+const hexToRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const luminance = h => { const [r, g, b] = hexToRgb(h); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
+
+// ---------- palettes ----------
+const PALETTES = [
+  { name: 'Sottsass Lunch',  ink: '#141414', cols: ['#f7c948', '#e9426e', '#2b59c3', '#1fb5a8', '#ff8a3d', '#f2ede4'] },
+  { name: 'Laminate Pink',   ink: '#1b1b2f', cols: ['#ffb3c6', '#a0e7e5', '#fbe7c6', '#3d348b', '#ff5e5b', '#ffffff'] },
+  { name: 'Terrazzo Noon',   ink: '#2d2a32', cols: ['#f4a259', '#5b8e7d', '#bc4b51', '#f4e285', '#8cb8d6', '#efe9e1'] },
+  { name: 'Broadcast Test',  ink: '#101010', cols: ['#ffffff', '#ffde00', '#00b7eb', '#ff2079', '#2bd96b', '#8a2be2'] },
+  { name: 'Formica Night',   ink: '#0e0e12', cols: ['#26215c', '#ff6f59', '#43aa8b', '#f2e94e', '#b388eb', '#fdfdfd'] },
+  { name: 'Office Plant',    ink: '#1a1f16', cols: ['#d9ed92', '#52b69a', '#1e6091', '#f9844a', '#f2f2f2', '#ffcad4'] },
+  { name: 'Mall Fountain',   ink: '#14213d', cols: ['#7bdff2', '#b2f7ef', '#f7d6e0', '#f2b5d4', '#ff9f1c', '#2ec4b6'] },
+];
+
+const TREATMENT_NAMES = {
+  stripes: 'warped stripes', dots: 'halftone', flow: 'flow-field lines',
+  field: 'contour field', confetti: 'rotated confetti grid', hatch: 'broken hatching',
+};
+
+const ADJ = ['Soft', 'Laminated', 'Reluctant', 'Neon', 'Municipal', 'Synthetic', 'Tender', 'Plastic',
+             'Wobbling', 'Loud', 'Pastel', 'Borrowed', 'Unruly', 'Suburban', 'Glossy', 'Sincere'];
+const NOUN = ['Weather', 'Furniture', 'Argument', 'Lobby', 'Archipelago', 'Machine', 'Parade', 'Kitchen',
+              'Choir', 'Atlas', 'Fountain', 'Satellite', 'Garden', 'Holiday', 'Escalator', 'Picnic'];
+
+// ---------- the generator ----------
+let job = 0;
+
+function render(seed) {
+  const myJob = ++job;
+  const rand = mulberry32(seed);
+  const P = new Perlin(rand);
+  const R = (a, b) => a + rand() * (b - a);
+  const RI = (a, b) => Math.floor(R(a, b + 1));
+  const pick = arr => arr[Math.floor(rand() * arr.length)];
+  const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+
+  const pal = pick(PALETTES);
+  const cols = shuffle([...pal.cols]);
+  const ink = pal.ink;
+  const field = { scale: R(0.0012, 0.0032), warp: R(60, 320), bands: RI(3, 9), octaves: RI(2, 4) };
+  const nShapes = RI(3, 6);
+  const used = new Set();
+  const steps = [];
+
+  // Pixel-level domain-warped contour field into a rectangle of the canvas.
+  function contourField(x0, y0, w, h, f, colors, off) {
+    const img = new ImageData(w, h), d = img.data;
+    const rgb = colors.map(hexToRgb), inkRgb = hexToRgb(ink), nc = rgb.length;
+    const s = f.scale, warp = f.warp, oct = f.octaves, bands = f.bands * 1.7;
+    let i = 0;
+    for (let y = y0; y < y0 + h; y++) {
+      for (let x = x0; x < x0 + w; x++) {
+        const sx = x * s * 0.6 + off, sy = y * s * 0.6 + off;
+        const wx = P.noise(sx, sy + 31.7) * warp, wy = P.noise(sx + 57.3, sy) * warp;
+        const v = fbm(P, (x + wx) * s + off, (y + wy) * s - off, oct);
+        const t = (v + 0.6) * bands;
+        let b = Math.floor(t);
+        const c = (t - b) < 0.06 ? inkRgb : rgb[((b % nc) + nc) % nc];
+        d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255; i += 4;
+      }
+    }
+    return img;
+  }
+
+  // 1. Ground: full-bleed contour field.
+  steps.push(() => ctx.putImageData(contourField(0, 0, W, H, field, cols.slice(0, 3), 0), 0, 0));
+
+  // 2. Under-drawing: thin flow-field lines where a second noise field runs high.
+  if (rand() < 0.75) steps.push(() => {
+    const s = R(0.002, 0.005), base = R(0, TAU);
+    ctx.save();
+    ctx.strokeStyle = ink; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+    for (let i = 0; i < 700; i++) {
+      let x = R(0, W), y = R(0, H);
+      if (n01(P.noise(x * 0.002 + 400, y * 0.002)) < 0.55) continue;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let k = 0; k < 50; k++) {
+        const a = P.noise(x * s + 300, y * s + 300) * TAU * 1.3 + base;
+        x += Math.cos(a) * 5; y += Math.sin(a) * 5;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // 3. Cut-paper shapes, each clipping its own noise treatment.
+  function poly(pts) {
+    const p = new Path2D();
+    pts.forEach(([x, y], i) => i ? p.lineTo(x, y) : p.moveTo(x, y));
+    p.closePath();
+    return p;
+  }
+  function rotated(cx, cy, a, pts) {
+    const c = Math.cos(a), s = Math.sin(a);
+    return pts.map(([x, y]) => [cx + x * c - y * s, cy + x * s + y * c]);
+  }
+  function makeShape(i) {
+    const kind = pick(['rect', 'rect', 'circle', 'blob', 'blob', 'arch', 'tri']);
+    const cx = R(160, W - 160), cy = R(160, H - 160), s = R(220, 500);
+    let path;
+    if (kind === 'rect') {
+      const w = s * R(0.55, 1.2) / 2, h = s * R(0.55, 1.3) / 2;
+      path = poly(rotated(cx, cy, R(-0.3, 0.3), [[-w, -h], [w, -h], [w, h], [-w, h]]));
+    } else if (kind === 'circle') {
+      path = new Path2D(); path.arc(cx, cy, s / 2, 0, TAU);
+    } else if (kind === 'blob') {
+      const pts = [];
+      for (let k = 0; k < 160; k++) {
+        const a = k / 160 * TAU;
+        const r = s / 2 * (0.6 + 0.65 * n01(P.noise(Math.cos(a) * 1.4 + i * 9.1, Math.sin(a) * 1.4 + i * 4.7)));
+        pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+      }
+      path = poly(pts);
+    } else if (kind === 'arch') {
+      const w = s * 0.38, h = s * 0.55, a = R(-0.2, 0.2);
+      const pts = [[-w, h], [-w, -h + w]];
+      for (let k = 0; k <= 40; k++) { const t = Math.PI + k / 40 * Math.PI; pts.push([Math.cos(t) * w, -h + w + Math.sin(t) * w]); }
+      pts.push([w, h]);
+      path = poly(rotated(cx, cy, a, pts));
+    } else {
+      const r = s / 2, a0 = R(0, TAU);
+      path = poly([0, 1, 2].map(k => [cx + Math.cos(a0 + k * TAU / 3) * r, cy + Math.sin(a0 + k * TAU / 3) * r]));
+    }
+    const x0 = Math.max(0, Math.floor(cx - s * 0.7)), y0 = Math.max(0, Math.floor(cy - s * 0.7));
+    const x1 = Math.min(W, Math.ceil(cx + s * 0.7)), y1 = Math.min(H, Math.ceil(cy + s * 0.7));
+    return { path, cx, cy, s, box: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } };
+  }
+
+  const treatments = {
+    stripes(b, A, B) {
+      ctx.fillStyle = A; ctx.fillRect(b.x, b.y, b.w, b.h);
+      const gap = R(18, 42), amp = R(10, 60), s = R(0.004, 0.012), ang = R(0, Math.PI);
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2, half = Math.hypot(b.w, b.h) / 2;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+      ctx.strokeStyle = B; ctx.lineWidth = gap * R(0.35, 0.55); ctx.lineJoin = 'round';
+      for (let y = -half; y < half; y += gap) {
+        ctx.beginPath();
+        for (let x = -half; x <= half; x += 6) {
+          const yy = y + P.noise(x * s + 90, y * s + 90) * amp;
+          x === -half ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    },
+    dots(b, A, B) {
+      ctx.fillStyle = A; ctx.fillRect(b.x, b.y, b.w, b.h);
+      const g = R(14, 30), s = R(0.003, 0.009);
+      ctx.fillStyle = B;
+      for (let y = b.y; y < b.y + b.h + g; y += g) {
+        for (let x = b.x; x < b.x + b.w + g; x += g) {
+          const r = n01(P.noise(x * s + 17, y * s + 23)) * g * 0.62;
+          if (r < 0.8) continue;
+          ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+        }
+      }
+    },
+    flow(b, A, B) {
+      ctx.fillStyle = A; ctx.fillRect(b.x, b.y, b.w, b.h);
+      const s = R(0.003, 0.008), n = Math.floor(b.w * b.h / 1800), base = R(0, TAU);
+      ctx.strokeStyle = B; ctx.lineWidth = R(2, 3.5); ctx.lineCap = 'round';
+      for (let i = 0; i < n; i++) {
+        let x = b.x + rand() * b.w, y = b.y + rand() * b.h;
+        ctx.beginPath(); ctx.moveTo(x, y);
+        for (let k = 0; k < 30; k++) {
+          const a = P.noise(x * s + 600, y * s + 600) * TAU * 1.5 + base;
+          x += Math.cos(a) * 4; y += Math.sin(a) * 4;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    },
+    field(b, A, B, C) {
+      const f = { scale: R(0.004, 0.009), warp: R(30, 120), bands: RI(3, 6), octaves: 2 };
+      const off = document.createElement('canvas');
+      off.width = b.w; off.height = b.h;
+      off.getContext('2d').putImageData(contourField(b.x, b.y, b.w, b.h, f, [A, B, C], R(10, 90)), 0, 0);
+      ctx.drawImage(off, b.x, b.y);
+    },
+    confetti(b, A, B, C) {
+      ctx.fillStyle = A; ctx.fillRect(b.x, b.y, b.w, b.h);
+      const g = R(38, 64), s = R(0.004, 0.01);
+      for (let y = b.y + g / 2; y < b.y + b.h; y += g) {
+        for (let x = b.x + g / 2; x < b.x + b.w; x += g) {
+          const v = P.noise(x * s + 333, y * s + 333);
+          ctx.save(); ctx.translate(x, y); ctx.rotate(v * TAU * 2);
+          ctx.fillStyle = v > 0 ? B : C;
+          if (v > 0) ctx.fillRect(-g * 0.32, -4, g * 0.64, 8);
+          else { ctx.beginPath(); ctx.moveTo(0, -g * 0.26); ctx.lineTo(g * 0.24, g * 0.18); ctx.lineTo(-g * 0.24, g * 0.18); ctx.fill(); }
+          ctx.restore();
+        }
+      }
+    },
+    hatch(b, A, B) {
+      ctx.fillStyle = A; ctx.fillRect(b.x, b.y, b.w, b.h);
+      const gap = R(9, 16), s = R(0.004, 0.01), thr = R(-0.1, 0.15);
+      ctx.strokeStyle = B; ctx.lineWidth = gap * 0.4;
+      for (let k = -b.h; k < b.w; k += gap) {
+        ctx.beginPath();
+        let down = false;
+        for (let t = 0; t <= b.h; t += 4) {
+          const x = b.x + k + t, y = b.y + t;
+          if (P.noise(x * s + 77, y * s + 77) > thr) { down ? ctx.lineTo(x, y) : ctx.moveTo(x, y); down = true; }
+          else down = false;
+        }
+        ctx.stroke();
+      }
+    },
+  };
+  const treatmentKeys = Object.keys(treatments);
+
+  for (let i = 0; i < nShapes; i++) steps.push(() => {
+    const shape = makeShape(i);
+    if (shape.box.w < 2 || shape.box.h < 2) return;
+    const key = pick(treatmentKeys);
+    used.add(key);
+    const [A, B, C] = shuffle([...cols]);
+    ctx.save(); ctx.translate(14, 14); ctx.fillStyle = ink; ctx.fill(shape.path); ctx.restore();
+    ctx.save(); ctx.clip(shape.path); treatments[key](shape.box, A, B, C); ctx.restore();
+    ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = ink; ctx.stroke(shape.path);
+  });
+
+  // 4. Memphis squiggles: a sine carrier bent by 1D noise.
+  const nSquiggles = RI(2, 4);
+  for (let q = 0; q < nSquiggles; q++) steps.push(() => {
+    const x = R(100, W - 100), y = R(100, H - 100), ang = R(0, TAU), len = R(260, 620);
+    const amp = R(14, 40), freq = R(0.03, 0.06), lw = R(9, 16), col = pick(cols), k = R(0, 100);
+    const ca = Math.cos(ang), sa = Math.sin(ang), path = new Path2D();
+    for (let t = 0; t <= len; t += 4) {
+      const o = Math.sin(t * freq) * amp + P.noise(t * 0.008, k) * amp * 1.5;
+      const px = x + ca * t - sa * o, py = y + sa * t + ca * o;
+      t ? path.lineTo(px, py) : path.moveTo(px, py);
+    }
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = lw;
+    ctx.save(); ctx.translate(6, 6); ctx.strokeStyle = ink; ctx.stroke(path); ctx.restore();
+    ctx.strokeStyle = col; ctx.stroke(path);
+  });
+
+  // 5. Confetti scattered where a low-frequency noise field is high, so it clusters.
+  steps.push(() => {
+    const target = RI(30, 90);
+    let placed = 0, tries = 0;
+    ctx.lineWidth = 3; ctx.strokeStyle = ink; ctx.lineJoin = 'round';
+    while (placed < target && tries++ < 5000) {
+      const x = R(30, W - 30), y = R(30, H - 30);
+      if (n01(P.noise(x * 0.004 + 200, y * 0.004 + 200)) < 0.6) continue;
+      placed++;
+      const sz = R(8, 22), kind = RI(0, 3);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(P.noise(x * 0.01, y * 0.01) * TAU * 3);
+      ctx.fillStyle = pick(cols);
+      ctx.beginPath();
+      if (kind === 0) { ctx.moveTo(0, -sz); ctx.lineTo(sz * 0.9, sz * 0.6); ctx.lineTo(-sz * 0.9, sz * 0.6); ctx.closePath(); }
+      else if (kind === 1) ctx.arc(0, 0, sz * 0.6, 0, TAU);
+      else if (kind === 2) ctx.rect(-sz * 1.2, -sz * 0.25, sz * 2.4, sz * 0.5);
+      else { const a = sz * 0.9, t = sz * 0.28; ctx.rect(-a, -t, a * 2, t * 2); ctx.rect(-t, -a, t * 2, a - t); ctx.rect(-t, t, t * 2, a - t); }
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  // 6. Paper grain.
+  steps.push(() => {
+    const tile = document.createElement('canvas');
+    tile.width = tile.height = 160;
+    const tctx = tile.getContext('2d'), img = tctx.createImageData(160, 160);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 110 + rand() * 40;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+    }
+    tctx.putImageData(img, 0, 0);
+    ctx.save();
+    ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.18;
+    ctx.fillStyle = ctx.createPattern(tile, 'repeat'); ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  });
+
+  // Draw one layer per frame so the piece builds up; all at once under reduced motion.
+  const instant = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let i = 0;
+  function tick() {
+    if (myJob !== job) return;
+    if (instant) { while (i < steps.length) steps[i++](); }
+    else steps[i++]();
+    if (i < steps.length) requestAnimationFrame(tick);
+    else writeLabel();
+  }
+  requestAnimationFrame(tick);
+
+  // ---------- wall label ----------
+  function writeLabel() {
+    const tr = mulberry32(seed ^ 0x9e3779b9);
+    const tp = arr => arr[Math.floor(tr() * arr.length)];
+    const a = tp(ADJ), n = tp(NOUN), a2 = tp(ADJ), num = 1 + (seed % 40);
+    const title = [
+      `${a} ${n}`,
+      `Study for a ${a} ${n}`,
+      `${n} in ${pal.name.split(' ')[0]}`,
+      `${a} ${n}, No. ${num}`,
+      `${n} for a ${a2} Afternoon`,
+    ][Math.floor(tr() * 5)];
+    document.getElementById('title').textContent = title;
+    document.getElementById('meta').textContent = `2026 · Seed ${seed}`;
+
+    const names = [...used].map(k => TREATMENT_NAMES[k]);
+    const list = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names.at(-1) : (names[0] || 'flat color');
+    document.getElementById('statement').textContent =
+      `A domain-warped Perlin field cut into ${field.bands} contour bands, overlaid with ${nShapes} paper shapes carrying ${list}. ` +
+      `Squiggles bend along one-dimensional noise, and the confetti falls only where a second noise field runs high.`;
+
+    const sw = pal.cols.map(c => `<span style="background:${c}"></span>`).join('');
+    document.getElementById('params').innerHTML = `
+      <dt>Palette</dt><dd>${pal.name}<span class="swatches">${sw}</span></dd>
+      <dt>Noise scale</dt><dd>${field.scale.toFixed(4)}</dd>
+      <dt>Warp</dt><dd>${Math.round(field.warp)} px</dd>
+      <dt>Octaves</dt><dd>${field.octaves}</dd>
+      <dt>Contour bands</dt><dd>${field.bands}</dd>
+      <dt>Shapes</dt><dd>${nShapes}</dd>`;
+
+    const root = document.documentElement.style;
+    root.setProperty('--accent', cols[0]);
+    root.setProperty('--on-accent', luminance(cols[0]) > 0.5 ? '#15161a' : '#ffffff');
+  }
+}
+
+// ---------- controls ----------
+const seedInput = document.getElementById('seed');
+let current = null;
+
+function go(seed) {
+  seed = Math.abs(Math.floor(seed)) % 1000000;
+  if (seed === current) return;
+  current = seed;
+  seedInput.value = seed;
+  try { history.replaceState(null, '', '#seed-' + seed); } catch (e) {}
+  render(seed);
+}
+const randomSeed = () => Math.floor(Math.random() * 1000000);
+const seedFromHash = () => { const m = /^#seed-(\d+)$/.exec(location.hash); return m ? +m[1] : null; };
+
+document.getElementById('new').addEventListener('click', () => go(randomSeed()));
+document.getElementById('seedForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = parseInt(seedInput.value, 10);
+  if (Number.isFinite(v)) go(v);
+});
+addEventListener('hashchange', () => { const s = seedFromHash(); if (s !== null) go(s); });
+addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'n' || e.key === 'N') go(randomSeed());
+});
+
+go(seedFromHash() ?? 48213);
+</script>
